@@ -31,6 +31,6 @@ setup(
         "Topic :: Utilities",
         ],
     packages=["quepy"],
-    install_requires=["refo", "nltk", "SPARQLWrapper", "docopt"],
+    install_requires=["refo", "nltk", "SPARQLWrapper", "docopt", "spacy >= 1.0"],
     scripts=["scripts/quepy"]
 )
