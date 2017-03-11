@@ -60,8 +60,16 @@ def get_tagger():
     The returned value is a function that receives a unicode string and returns
     a list of `Word` instances.
     """
-    from quepy.nltktagger import run_nltktagger
-    tagger_function = lambda x: run_nltktagger(x, settings.NLTK_DATA_PATH)
+
+    # TODO: Decide approach
+    #parser = getattr( settings.PARSER, None )
+    #if parser == "spaCy":
+    if settings.PARSER == 'spaCy':
+        from quepy.spacytagger import run_spacytagger
+        tagger_function = run_spacytagger
+    else:
+        from quepy.nltktagger import run_nltktagger
+        tagger_function = lambda x: run_nltktagger(x, settings.NLTK_DATA_PATH)
 
     def wrapper(string):
         assert_valid_encoding(string)

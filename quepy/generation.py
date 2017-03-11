@@ -20,7 +20,6 @@ from quepy.mql_generation import generate_mql
 from quepy.dot_generation import expression_to_dot
 from quepy.sparql_generation import expression_to_sparql
 
-
 def get_code(expression, language):
     """
     Given an expression and a supported language, it
@@ -33,6 +32,10 @@ def get_code(expression, language):
         return expression_to_dot(expression)
     elif language == "mql":
         return generate_mql(expression)
+    elif language == "neuroarch_json":
+        # NOTE: The import here is fine for prototyping, but consider changing.
+        from neuroarch_nlp.codegen import generate_json
+        return generate_json( expression )
     else:
         message = u"Language '{}' is not supported"
         raise ValueError(message.format(language))
