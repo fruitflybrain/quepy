@@ -9,8 +9,9 @@ log = logging.getLogger( 'quepy.spacytagger' )
 from neuroarch_nlp.data import neuropils, subregions, colors_values
 import spacy
 from spacy.attrs import LOWER
-
+from spacy.matcher import Matcher
 nlp = spacy.load('en')
+matcher = Matcher(nlp.vocab)
 
 # Go through the accepted (English) string representations of neuropil names
 # and add the multi-word names to spaCy's rule-based Matcher, so we can merge
@@ -20,16 +21,16 @@ for db_rep, string_reps in neuropils:
         lexes = string.split()
         if len( lexes ) > 1:
             # NOTE: The first parameter, the ID, could be specified as the "canonical" neuropil name
-            nlp.matcher.add_pattern( 'NEUROPIL',
-                                     [ {LOWER: lex.lower()} for lex in lexes ],
-                                     label='NEUROPIL' )
+            matcher.add( 'NEUROPIL', None, 
+                         [ {LOWER: lex.lower()} for lex in lexes ])
+#                         label='NEUROPIL' )
 # Also merge multi-word subregion names and accepted (English; HTML) color names
 for phrase in subregions.keys() + colors_values.keys():
     phrase = phrase.split()
     if len( phrase ) > 1:
-        nlp.matcher.add_pattern( 'SUBREGION',
-                                 [ {LOWER: lex.lower()} for lex in phrase ],
-                                 label='SUBREGION' )
+        matcher.add( 'SUBREGION', None,
+                     [ {LOWER: lex.lower()} for lex in phrase ])
+#                     label='SUBREGION' )
 
 compilers = [
     ('presynaptic', re.compile(
@@ -58,7 +59,7 @@ def run_spacytagger( string ):
     doc = nlp( string )  # NOTE: spaCy expects and returns unicode
 
     spans = [ (ent_id, label_id, doc[start:end])
-             for ent_id, label_id, start, end in nlp.matcher( doc ) ]
+             for ent_id, label_id, start, end in matcher( doc ) ]
     for ent_id, label_id, span in spans:
         span.merge( label=label_id, tag='NNP' if label_id else span.root.tag_ )
 
