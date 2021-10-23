@@ -64,6 +64,8 @@ class QuepyApp(object):
         assert isinstance(parsing, ModuleType)
         assert isinstance(settings, ModuleType)
 
+        self.app_name = app_name
+
         self._parsing_module = parsing
         self._settings_module = settings
 
@@ -121,7 +123,7 @@ class QuepyApp(object):
         """
         question = encoding_flexible_conversion(question)
         for expression, userdata in self._iter_compiled_forms(question):
-            target, query = generation.get_code(expression, self.language)
+            target, query = generation.get_code(self.app_name, expression, self.language)
             message = "Interpretation {1}: {0}"
             logger.debug(message.format(str(expression),
                          expression.rule_used))
