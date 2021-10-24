@@ -12,6 +12,10 @@ import re
 
 import spacy
 from spacy.attrs import LOWER
+from spacy.matcher import Matcher
+from spacy.symbols import ORTH
+from spacy.util import filter_spans
+import numpy as np
 
 from quepy import settings
 from quepy.encodingpolicy import assert_valid_encoding
@@ -74,26 +78,62 @@ def get_tagger(app_name):
         defaults = importlib.import_module('{}.defaults'.format(app_name))
         neuropils = getattr(defaults, 'neuropils')
         subregions = getattr(defaults, 'subregions')
-        nlp = spacy.load('en')
+        neuron_types = getattr(defaults, 'neuron_types')
+        
+        nlp = spacy.load('en_core_web_sm')
+        matcher = Matcher(nlp.vocab)
+        vocab = nlp.vocab
 
-        # Go through the accepted (English) string representations of neuropil names
-        # and add the multi-word names to spaCy's rule-based Matcher, so we can merge
-        # each name as a single token (later), which will slightly simplify the grammar
+        vector_data = {}
+
+        neuron_type_patterns = []
+        for n in neuron_types:
+            lexes = n.split()
+            for lex in lexes:
+                if lex not in vocab:
+                    vector_data[lex] = np.random.uniform(-1, 1, (300,)).astype(np.float32)
+            if len(lexes) > 1:
+                neuron_type_patterns.append([ {LOWER: lex.lower()} for lex in lexes ])
+        matcher.add( 'NEURONTYPE', neuron_type_patterns)
+
+        neuropil_patterns = []
         for db_rep, string_reps in neuropils:
             for string in string_reps:
                 lexes = string.split()
+                for lex in lexes:
+                    if lex not in vocab:
+                        vector_data[lex] = np.random.uniform(-1, 1, (300,)).astype(np.float32)
+                    
                 if len( lexes ) > 1:
-                    # NOTE: The first parameter, the ID, could be specified as the "canonical" neuropil name
-                    nlp.matcher.add_pattern( 'NEUROPIL',
-                                             [ {LOWER: lex.lower()} for lex in lexes ],
-                                             label='NEUROPIL' )
+                    neuropil_patterns.append([ {LOWER: lex.lower()} for lex in lexes ])
 
-        for phrase in subregions.keys() + colors_values.keys():
+        matcher.add( 'NEUROPIL', neuropil_patterns)
+                
+        subregion_patterns = []
+        for phrase in subregions:
             phrase = phrase.split()
+            for lex in phrase:
+                if lex not in vocab:
+                    vector_data[lex] = np.random.uniform(-1, 1, (300,)).astype(np.float32)
             if len( phrase ) > 1:
-                nlp.matcher.add_pattern( 'SUBREGION',
-                                         [ {LOWER: lex.lower()} for lex in phrase ],
-                                         label='SUBREGION' )
+                subregion_patterns.append([ {LOWER: lex.lower()} for lex in phrase ])
+        matcher.add( 'SUBREGION', subregion_patterns)
+
+        color_patterns = []
+        for phrase in colors_values:
+            phrase = phrase.split()
+            for lex in phrase:
+                if lex not in vocab:
+                    vector_data[lex] = np.random.uniform(-1, 1, (300,)).astype(np.float32)
+            if len( phrase ) > 1:
+                color_patterns.append([ {LOWER: lex.lower()} for lex in phrase ])
+        matcher.add( 'COLOR', color_patterns)
+
+        for word, vector in vector_data.items():
+            vocab.set_vector(word, vector)
+            special_case = [{ORTH: word}]
+            nlp.tokenizer.add_special_case(word, special_case)
+            
 
         compilers = [
             ('presynaptic', re.compile(
@@ -121,11 +161,12 @@ def get_tagger(app_name):
 
             doc = nlp( string )  # NOTE: spaCy expects and returns unicode
 
-            spans = [ (ent_id, label_id, doc[start:end])
-                     for ent_id, label_id, start, end in nlp.matcher( doc ) ]
-            for ent_id, label_id, span in spans:
-                span.merge( label=label_id, tag='NNP' if label_id else span.root.tag_ )
-
+            spans = [doc[start:end]
+                for match_id, start, end in matcher( doc ) ]
+            filtered = filter_spans(spans)
+            with doc.retokenize() as retokenizer:
+                for span in filtered:
+                    retokenizer.merge(span)
             # tag_ is the "fine-grained" POS
             words = [ Word(x.text, x.lemma_, x.tag_) for x in doc ]
 
