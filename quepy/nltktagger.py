@@ -25,7 +25,7 @@ _penn_to_morphy_tag = {}
 def penn_to_morphy_tag(tag):
     assert_valid_encoding(tag)
 
-    for penn, morphy in _penn_to_morphy_tag.iteritems():
+    for penn, morphy in _penn_to_morphy_tag.items():
         if tag.startswith(penn):
             return morphy
     return None
@@ -46,10 +46,10 @@ def run_nltktagger(string, nltk_data_path=None):
 
     if not _penn_to_morphy_tag:
         _penn_to_morphy_tag = {
-            u'NN': wordnet.NOUN,
-            u'JJ': wordnet.ADJ,
-            u'VB': wordnet.VERB,
-            u'RB': wordnet.ADV,
+            'NN': wordnet.NOUN,
+            'JJ': wordnet.ADJ,
+            'VB': wordnet.VERB,
+            'RB': wordnet.ADV,
         }
 
     # Recommended tokenizer doesn't handle non-ascii characters very well

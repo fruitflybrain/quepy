@@ -9,27 +9,27 @@ log = logging.getLogger( 'quepy.spacytagger' )
 from neuroarch_nlp.data import neuropils, subregions, colors_values
 import spacy
 from spacy.attrs import LOWER
+from spacy.matcher import Matcher
 
-nlp = spacy.load('en')
+nlp = spacy.load('en_core_web_sm')
 
 # Go through the accepted (English) string representations of neuropil names
 # and add the multi-word names to spaCy's rule-based Matcher, so we can merge
 # each name as a single token (later), which will slightly simplify the grammar
+matcher = Matcher(nlp.vocab)
 for db_rep, string_reps in neuropils:
     for string in string_reps:
         lexes = string.split()
         if len( lexes ) > 1:
             # NOTE: The first parameter, the ID, could be specified as the "canonical" neuropil name
-            nlp.matcher.add_pattern( 'NEUROPIL',
-                                     [ {LOWER: lex.lower()} for lex in lexes ],
-                                     label='NEUROPIL' )
+            matcher.add( 'NEUROPIL', None,
+                        [ {"LOWER": lex.lower()} for lex in lexes ])
 # Also merge multi-word subregion names and accepted (English; HTML) color names
-for phrase in subregions.keys() + colors_values.keys():
+for phrase in subregions or phrase in colors_values:
     phrase = phrase.split()
     if len( phrase ) > 1:
-        nlp.matcher.add_pattern( 'SUBREGION',
-                                 [ {LOWER: lex.lower()} for lex in phrase ],
-                                 label='SUBREGION' )
+        matcher.add( 'SUBREGION', None,
+                            [{"LOWER": lex.lower()} for lex in phrase ])
 
 compilers = [
     ('presynaptic', re.compile(
@@ -57,8 +57,8 @@ def run_spacytagger( string ):
 
     doc = nlp( string )  # NOTE: spaCy expects and returns unicode
 
-    spans = [ (ent_id, label_id, doc[start:end])
-             for ent_id, label_id, start, end in nlp.matcher( doc ) ]
+    spans = [ (ent_id, nlp.vocab.strings[ent_id], doc[start:end])
+             for ent_id, start, end in matcher( doc ) ]
     for ent_id, label_id, span in spans:
         span.merge( label=label_id, tag='NNP' if label_id else span.root.tag_ )
 
@@ -79,7 +79,7 @@ def run_spacytagger( string ):
                 "<-"+ str(node.left_edge), str(node.right_edge) +"->"] ]) )
         for el in node.children:
             # NOTE: Could also change display based on node.lefts and node.rights
-            trav_tree( indents + 1, el ) 
+            trav_tree( indents + 1, el )
     for sent in doc.sents:
         trav_tree( 0, sent.root )
     log.info( 'Ents:  '+ str(doc.ents) )

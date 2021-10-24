@@ -16,16 +16,19 @@ The currently supported languages are:
     * Dot: generation of graph images mainly for debugging.
 """
 
+import importlib
 from quepy.mql_generation import generate_mql
 from quepy.dot_generation import expression_to_dot
 from quepy.sparql_generation import expression_to_sparql
-from neuroarch_nlp.codegen import generate_json
 
-def get_code(expression, language):
+
+def get_code(app_name, expression, language):
     """
     Given an expression and a supported language, it
     returns the query for that expression on that language.
     """
+    codegen = importlib.import_module('{}.codegen'.format(app_name))
+    generate_json = getattr(codegen, 'generate_json')
 
     if language == "sparql":
         return expression_to_sparql(expression)
@@ -36,5 +39,5 @@ def get_code(expression, language):
     elif language == "neuroarch_json":
         return generate_json( expression )
     else:
-        message = u"Language '{}' is not supported"
+        message = "Language '{}' is not supported"
         raise ValueError(message.format(language))
