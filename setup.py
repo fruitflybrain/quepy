@@ -31,6 +31,8 @@ setup(
         "Topic :: Utilities",
         ],
     packages=["quepy"],
-    install_requires=["refo>=0.13", "nltk", "SPARQLWrapper", "docopt", "spacy"],
+    # moved requires for "refo" to ffbo.nlp_component to allow this package to
+    # install with pip
+    install_requires=["nltk", "SPARQLWrapper", "docopt", "spacy"],
     scripts=["scripts/quepy"]
 )
