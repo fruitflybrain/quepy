@@ -77,6 +77,7 @@ def get_tagger(app_name):
         from neuroarch_nlp.data import colors_values
         defaults = importlib.import_module('{}.defaults'.format(app_name))
         neuropils = getattr(defaults, 'neuropils')
+        arborization_regions = getattr(defaults, 'arborization_regions')
         subregions = getattr(defaults, 'subregions')
         neuron_types = getattr(defaults, 'neuron_types')
         
@@ -110,6 +111,16 @@ def get_tagger(app_name):
         matcher.add( 'NEUROPIL', neuropil_patterns)
                 
         subregion_patterns = []
+        for db_rep, string_reps in arborization_regions:
+            for string in string_reps:
+                lexes = string.split()
+                for lex in lexes:
+                    if lex not in vocab:
+                        vector_data[lex] = np.random.uniform(-1, 1, (300,)).astype(np.float32)
+                    
+                if len( lexes ) > 1:
+                    subregion_patterns.append([ {LOWER: lex.lower()} for lex in lexes ])
+
         for phrase in subregions:
             phrase = phrase.split()
             for lex in phrase:
