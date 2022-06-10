@@ -5,7 +5,7 @@ except ImportError:
 
 setup(
     name="quepy",
-    version="0.3.0",
+    version="0.4.0",
     description="A framework to convert natural language to database queries.",
     long_description=open('README.rst').read(),
     author="Rafael Carrascosa, Gonzalo Garcia Berrotaran",
@@ -33,6 +33,6 @@ setup(
     packages=["quepy"],
     # moved requires for "refo" to ffbo.nlp_component to allow this package to
     # install with pip
-    install_requires=["nltk", "SPARQLWrapper", "docopt", "spacy"],
+    install_requires=["nltk", "SPARQLWrapper", "docopt", "spacy=3"],
     scripts=["scripts/quepy"]
 )
